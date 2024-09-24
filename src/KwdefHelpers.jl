@@ -1,6 +1,6 @@
 module KwdefHelpers
 
-using AccessorsExtra
+using Accessors
 
 export kwdef_defaults
 
@@ -8,21 +8,24 @@ struct Throws{E}
     e::E
 end
 
-_eval(code, x::Core.SSAValue) = _eval(code, code[x.id])
-_eval(code, x::GlobalRef) = eval(x)
-_eval(code, x) = x
+_eval(code, kwargs, x::Core.SSAValue) = _eval(code, kwargs, code[x.id])
+_eval(code, kwargs, x::GlobalRef) = eval(x)
+_eval(code, kwargs, x) = x
 
-function _eval(code, x::Core.SlotNumber)
+function _eval(code, kwargs, x::Core.SlotNumber)
     assignment = filter(c -> Base.isexpr(c, :(=)) && c.args[1] == x, code) |> only
-    _eval(code, assignment.args[2])
+    _eval(code, kwargs, assignment.args[2])
 end
 
-function _eval(code, x::Expr)
+function _eval(code, kwargs, x::Expr)
     x = @modify(x.args[∗] |> If(a -> !(a isa GlobalRef))) do v
-        _eval(code, v)
+        _eval(code, kwargs, v)
     end
     uke = filter(a -> a isa UndefKeywordError, x.args)
-    length(uke) == 1 ? Throws(only(uke)) : eval(x)
+    length(uke) == 1 && return get(kwargs, only(uke).var, Throws(only(uke)))
+    thrs = filter(a -> a isa Throws, x.args)
+    isempty(thrs) || return first(thrs)
+    eval(x)
 end
 
 """
@@ -52,23 +55,27 @@ julia> kwdef_defaults(MyS; somemore=567)
 (somefield = 123, another = nothing, somemore = 567, lastone = [1 + 2im, 567, 123])
 ```
 """
-function kwdef_defaults(::Type{T}; kwargs...) where {T}
-    m = first(methods(T))
+kwdef_defaults(::Type{T}; kwargs...) where {T} = kwargs_defaults(T; kwargs...)
+
+function kwargs_defaults(f; kwargs...)
+    m = try
+        which(f, Tuple{})
+    catch e
+        occursin(r"no .*method", string(e)) && return (;)
+        rethrow()
+    end
     kwnames = Base.kwarg_decl(m) |> Tuple
     isempty(kwnames) && return (;)
 
-    ci = code_lowered(T)[1]
+    ci = code_lowered(f)[1]
     @assert ci.code[end] isa Core.ReturnNode
     constructor = ci.code[end-1]
     @assert Base.isexpr(constructor, :call)
     kwargslots = constructor.args[2:end-1]
 
-    vals = map(sl -> _eval(ci.code, sl), kwargslots) |> Tuple
-    vals = @modify(vals |> RecursiveOfType(Throws{UndefKeywordError})) do t
-        get(kwargs, t.e.var, t)
-    end
+    vals = map(sl -> _eval(ci.code, kwargs, sl), kwargslots) |> Tuple
     kws = NamedTuple{kwnames}(vals)
-    _filter(v -> isempty(getall(v, RecursiveOfType(Throws{UndefKeywordError}))), kws)
+    _filter(v -> !(v isa Throws{UndefKeywordError}), kws)
 end
 
 # XXX: remove when released in Julia

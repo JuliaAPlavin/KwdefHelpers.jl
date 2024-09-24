@@ -4,21 +4,29 @@ using TestItemRunner
 
 
 @testitem "usage" begin
-    struct MyS_NoKw1
+    using KwdefHelpers: kwargs_defaults
+
+    struct MyS_NoKw
         a
     end
     @test kwdef_defaults(MyS_NoKw) == (;)
 
-    f() = 456
+    g() = 456
     @kwdef struct MyS{T}
         somefield = 123
         another::Union{Int,Nothing} = nothing
         somemore
-        lastone::Vector{T} = [1+2im, somemore, f()+4im, somefield]
+        lastone::Vector{T} = [1+2im, somemore + 1, g()+4im, somefield]
     end
 
     @test kwdef_defaults(MyS) == (somefield = 123, another = nothing)
-    @test kwdef_defaults(MyS; somemore=567) == (somefield = 123, another = nothing, somemore = 567, lastone = Number[1 + 2im, 567, 456 + 4im, 123])
+    @test kwdef_defaults(MyS; somemore=567) == (somefield = 123, another = nothing, somemore = 567, lastone = Complex{Int64}[1 + 2im, 568 + 0im, 456 + 4im, 123 + 0im])
+
+    f(x) = x
+    f(; abc=123, x, def=x + 1) = abc + def
+    f(x, y) = x
+    @test kwargs_defaults(f) == (abc = 123,)
+    @test kwargs_defaults(f; x=5) == (abc = 123, x = 5, def = 6)
 end
 
 
