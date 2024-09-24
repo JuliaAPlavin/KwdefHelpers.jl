@@ -12,8 +12,8 @@ using TestItemRunner
         lastone::Vector{T} = [1+2im, somemore, f()+4im, somefield]
     end
 
-    @test kwdef_argvals(MyS) == (somefield = 123, another = nothing)
-    @test kwdef_argvals(MyS; somemore=567) == (somefield = 123, another = nothing, somemore = 567, lastone = Number[1 + 2im, 567, 456 + 4im, 123])
+    @test kwdef_defaults(MyS) == (somefield = 123, another = nothing)
+    @test kwdef_defaults(MyS; somemore=567) == (somefield = 123, another = nothing, somemore = 567, lastone = Number[1 + 2im, 567, 456 + 4im, 123])
 end
 
 
