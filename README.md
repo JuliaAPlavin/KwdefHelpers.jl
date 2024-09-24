@@ -8,6 +8,7 @@ Currently, only provides the `kwdef_defaults(T)` function that extracts default 
     kwdef_defaults(::Type{T}; kwargs...)::NamedTuple
 
 Evaluate the default argument values for a type `T` that was defined with `@kwdef`.
+Returns an empty `NamedTuple` for non-`@kwdef` structs.
 
 Pass `kwargs...` to override the defaults or provide additional arguments.
 

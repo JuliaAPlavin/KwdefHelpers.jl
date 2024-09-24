@@ -4,6 +4,11 @@ using TestItemRunner
 
 
 @testitem "usage" begin
+    struct MyS_NoKw1
+        a
+    end
+    @test kwdef_defaults(MyS_NoKw) == (;)
+
     f() = 456
     @kwdef struct MyS{T}
         somefield = 123

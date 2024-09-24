@@ -22,13 +22,14 @@ function _eval(code, x::Expr)
         _eval(code, v)
     end
     uke = filter(a -> a isa UndefKeywordError, x.args)
-    length(uke) == 1 ? Throws(only(uke)) : eval(@show x)
+    length(uke) == 1 ? Throws(only(uke)) : eval(x)
 end
 
 """
     kwdef_defaults(::Type{T}; kwargs...)::NamedTuple
 
 Evaluate the default argument values for a type `T` that was defined with `@kwdef`.
+Returns an empty `NamedTuple` for non-`@kwdef` structs.
 
 Pass `kwargs...` to override the defaults or provide additional arguments.
 
@@ -54,6 +55,7 @@ julia> kwdef_defaults(MyS; somemore=567)
 function kwdef_defaults(::Type{T}; kwargs...) where {T}
     m = first(methods(T))
     kwnames = Base.kwarg_decl(m) |> Tuple
+    isempty(kwnames) && return (;)
 
     ci = code_lowered(T)[1]
     @assert ci.code[end] isa Core.ReturnNode
