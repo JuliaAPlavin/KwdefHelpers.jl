@@ -22,15 +22,17 @@ function _eval(code, x::Expr)
         _eval(code, v)
     end
     uke = filter(a -> a isa UndefKeywordError, x.args)
-    length(uke) == 1 ? Throws(only(uke)) : eval(x)
+    length(uke) == 1 ? Throws(only(uke)) : eval(@show x)
 end
 
 """
-    kwdef_defaults(::Type{T}; kwargs...) where {T}
+    kwdef_defaults(::Type{T}; kwargs...)::NamedTuple
 
-Extract the default values arguments for a type `T` that was defined with `@kwdef`.
+Evaluate the default argument values for a type `T` that was defined with `@kwdef`.
 
 Pass `kwargs...` to override the defaults or provide additional arguments.
+
+Note: `kwdef_defaults()` uses code introspection to extract the default values, it is not recommended for use in performance-critical code.
 
 # Examples
 

@@ -5,11 +5,13 @@ Helper functions to work with `@kwdef`-defined structs.
 Currently, only provides the `kwdef_defaults(T)` function that extracts default arguments:
 
 ```julia
-    kwdef_defaults(::Type{T}; kwargs...) where {T}
+    kwdef_defaults(::Type{T}; kwargs...)::NamedTuple
 
-Extract the default values arguments for a type `T` that was defined with `@kwdef`.
+Evaluate the default argument values for a type `T` that was defined with `@kwdef`.
 
 Pass `kwargs...` to override the defaults or provide additional arguments.
+
+Note: `kwdef_defaults()` uses code introspection to extract the default values, it is not recommended for use in performance-critical code.
 
 # Examples
 
